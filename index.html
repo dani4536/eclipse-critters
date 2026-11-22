@@ -1,0 +1,124 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#101426"><title>Eclipse Critters: Survival</title><style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101426;color:#f5f6ff;font-family:system-ui,Arial,sans-serif;touch-action:none}
+button,input{font:inherit}
+button{border:0;border-radius:12px;padding:11px 15px;background:#7654ed;color:white;font-weight:750;cursor:pointer}
+button:disabled{opacity:.45}
+input{width:100%;padding:12px;border:1px solid #53658d;border-radius:10px;background:#111a30;color:white;margin:6px 0}
+.screen{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:12px;overflow:auto;background:radial-gradient(ellipse at 50% 35%,#35416c,#101426 75%)}
+.panel{width:min(96vw,680px);max-height:96dvh;overflow:auto;background:#1a2440;border:1px solid #52618e;border-radius:20px;padding:clamp(12px,3vw,22px);text-align:center;box-shadow:0 12px 40px #0009}
+h1{font-size:clamp(26px,5vw,44px);margin:3px;color:#e5d5ff}
+h2{margin:8px}p{color:#c1cce7;margin:7px}
+.actions{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:7px;margin:9px 0}
+.creatures{display:flex;gap:8px;margin:10px 0}
+.creature{flex:1;min-width:0;background:#283557;padding:10px 4px;border-radius:12px;border:2px solid #52618e;cursor:pointer}
+.creature.selected{border-color:#ffe27c;background:#4a4a70}
+.creature b{display:block;font-size:28px}
+.small{font-size:12px;color:#aebbd8}
+.hidden{display:none!important}
+#profile{display:flex;align-items:center;justify-content:center;gap:8px;min-height:38px}
+#profile img{width:34px;height:34px;border-radius:50%}
+#game{position:absolute;inset:0;display:none;background:#13251e}
+canvas{width:100%;height:100%;display:block;touch-action:none}
+#hud{position:absolute;top:7px;left:8px;right:8px;display:flex;gap:6px;justify-content:space-between;pointer-events:none;flex-wrap:wrap}
+.hudbox{background:#101426dc;border:1px solid #62709a;border-radius:9px;padding:6px 9px;font-size:12px}
+#xpbar{position:absolute;top:44px;left:10%;width:80%;height:8px;background:#38435a;border-radius:10px;overflow:hidden}
+#xpfill{height:100%;width:0;background:#44e8ff}
+#joystick{position:absolute;width:110px;height:110px;margin:-55px;border:2px solid #ffffff77;border-radius:50%;background:#ffffff24;display:none;pointer-events:none}
+#stick{position:absolute;left:32px;top:32px;width:42px;height:42px;border-radius:50%;background:#ffffffaa}
+#fullscreen{position:absolute;right:8px;bottom:8px;background:#151d34dd}
+.overlay{position:absolute;inset:0;z-index:5;display:none;align-items:center;justify-content:center;background:#080d1bea;padding:12px}
+#upgradeCards{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.upgrade{flex:1;min-width:105px;background:#29385d;border:1px solid #a98aff;border-radius:13px;padding:12px;cursor:pointer}
+#portrait{position:absolute;inset:0;z-index:20;background:#101426;display:none;align-items:center;justify-content:center;text-align:center;padding:25px}
+#status{min-height:18px}
+@media(orientation:portrait){#portrait{display:flex}}
+@media(max-height:440px){.panel{padding:9px}.screen{padding:4px}.creature{padding:5px}.panel h1{font-size:25px}}
+
+#hud{z-index:2}#bossbar{position:absolute;top:60px;left:18%;width:64%;height:12px;border:1px solid #ffd47a;background:#291a2c;border-radius:20px;overflow:hidden;display:none}#bossfill{height:100%;width:100%;background:linear-gradient(90deg,#ff475e,#ffb347)}
+#pauseBtn{position:absolute;right:8px;bottom:8px;z-index:3;background:#151d34dd}#toast{position:absolute;left:50%;top:82px;transform:translateX(-50%);z-index:4;background:#111a30eF;border:1px solid #ffe27c;border-radius:12px;padding:8px 14px;display:none;text-align:center;white-space:nowrap}
+#bossName{position:absolute;top:76px;left:0;right:0;text-align:center;font-size:11px;color:#ffe2a1;display:none;text-shadow:0 2px 4px #000}
+#levelOverlay .panel{max-width:760px}.upgrade{min-height:116px;color:#fff;text-align:center}.upgrade h3{margin:4px}.upgrade p{font-size:13px}
+#pauseOverlay,#victoryOverlay{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;background:#080d1bea;padding:12px}
+#skillbar{position:absolute;bottom:9px;left:10px;display:flex;gap:5px;pointer-events:none;z-index:2}.skill{background:#101426dc;border:1px solid #8e9bc0;border-radius:9px;padding:5px 7px;font-size:11px}
+.menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.menu-grid button{font-size:12px}
+@media(max-height:440px){#hud{top:4px}.hudbox{padding:4px 6px;font-size:10px}#xpbar{top:34px}#bossbar{top:49px}#bossName{top:63px}}
+</style></head><body>
+<div id="portrait"><div><div style="font-size:60px">📱↻</div><h2>Gira tu teléfono</h2><p>Este juego se disfruta en horizontal.</p><button onclick="goFullscreen()">Pantalla completa</button></div></div>
+<section id="menu" class="screen"><div class="panel"><h1>🌑 Eclipse Critters</h1><h3>SURVIVAL · EDICIÓN COMPLETA</h3><p>Sobrevive a 15 minutos, derrota al Eclipse y evoluciona.</p><div id="profile">👤 Jugador local</div><h3>🪙 <span id="coins">0</span> monedas　🏆 Récord: <span id="record">0</span>s</h3><h3>Elige tu criatura</h3><div class="creatures">
+<div class="creature selected" data-type="fire" onclick="selectCreature('fire')"><b>🔥</b>Ignis<div class="small">Disparo veloz · daño alto</div></div><div class="creature" data-type="water" onclick="selectCreature('water')"><b>💧</b>Aqua<div class="small">Ondas de área · resistente</div></div><div class="creature" data-type="plant" onclick="selectCreature('plant')"><b>🌿</b>Florix<div class="small">Proyectiles perforantes</div></div><div class="creature" data-type="shadow" onclick="selectCreature('shadow')"><b>🌙</b>Noctis<div class="small">Orbes orbitantes</div></div></div>
+<h3>Mejoras permanentes</h3><div class="menu-grid"><button onclick="buyUpgrade('hp')">❤️ Vida +10 · 50 🪙</button><button onclick="buyUpgrade('damage')">⚔️ Daño +10% · 50 🪙</button><button onclick="buyUpgrade('speed')">💨 Velocidad +5% · 50 🪙</button><button onclick="buyUpgrade('magnet')">🧲 Imán +10% · 50 🪙</button></div><p class="small">Controles: joystick izquierdo o WASD/flechas. Los ataques son automáticos.</p><div class="actions"><button onclick="startGame()" style="background:#159c73;font-size:19px;padding:14px 42px">▶ COMENZAR PARTIDA</button></div><div id="status" class="small">Progreso guardado en este dispositivo.</div><p class="small">Eclipse Critters: Survival · v2.0 · Juego original</p></div></section>
+<div id="game"><canvas id="canvas"></canvas><div id="hud"><div class="hudbox">❤️ <span id="health">100</span></div><div class="hudbox">⭐ Nv. <span id="level">1</span></div><div class="hudbox">🪙 <span id="gameCoins">0</span></div><div class="hudbox">⏱ <span id="time">0:00</span></div><div class="hudbox">☠ <span id="kills">0</span></div></div><div id="xpbar"><div id="xpfill"></div></div><div id="bossbar"><div id="bossfill"></div></div><div id="bossName"></div><div id="toast"></div><div id="skillbar"></div><div id="joystick"><div id="stick"></div></div><button id="pauseBtn" onclick="togglePause()">Ⅱ PAUSA</button>
+<div id="levelOverlay" class="overlay"><div class="panel"><h2>✨ ¡SUBISTE DE NIVEL!</h2><p>Elige una mejora para continuar.</p><div id="upgradeCards"></div></div></div>
+<div id="pauseOverlay"><div class="panel"><h1>⏸ Pausa</h1><p>La partida está detenida.</p><div class="actions"><button onclick="togglePause()">▶ CONTINUAR</button><button onclick="returnMenu()">Salir al menú</button></div></div></div>
+<div id="gameOver" class="overlay"><div class="panel"><h1>🌑 Fin de la partida</h1><h2>Tiempo: <span id="finalTime">0</span></h2><h2>Derrotas: <span id="finalKills">0</span> · Monedas: <span id="finalCoins">0</span></h2><p id="endMessage">El Eclipse sigue creciendo...</p><button onclick="returnMenu()">Volver al menú</button><button onclick="startGame()">Reintentar</button></div></div>
+<div id="victoryOverlay"><div class="panel"><h1>🌟 ¡VICTORIA!</h1><h2>Has derrotado al Núcleo del Eclipse</h2><p id="victoryStats"></p><button onclick="returnMenu()">Volver al menú</button></div></div></div>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),rand=(a,b)=>Math.random()*(b-a)+a,dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y),TAU=Math.PI*2;
+const TYPES={fire:{emoji:'🔥',color:'#ff7043',rate:.48,damage:19,hp:100,speed:190},water:{emoji:'💧',color:'#45c8ff',rate:1.15,damage:28,hp:125,speed:172},plant:{emoji:'🌿',color:'#63df8b',rate:.82,damage:16,hp:105,speed:180},shadow:{emoji:'🌙',color:'#c18aff',rate:.9,damage:13,hp:95,speed:205}};
+const ENEMY=[{name:'Sombra',emoji:'👾',hp:28,speed:55,damage:9,xp:3,r:14},{name:'Acechador',emoji:'🟣',hp:42,speed:88,damage:12,xp:4,r:13},{name:'Bruto',emoji:'🪨',hp:115,speed:35,damage:20,xp:8,r:21},{name:'Errante',emoji:'👻',hp:62,speed:66,damage:14,xp:6,r:17}];
+const UPGRADES=[{id:'damage',icon:'⚔️',name:'Poder aumentado',desc:'Daño de todos tus ataques +22%'},{id:'speed',icon:'💨',name:'Paso ligero',desc:'Velocidad de movimiento +14%'},{id:'rapid',icon:'⚡',name:'Ritmo acelerado',desc:'Ataques automáticos +18% rápidos'},{id:'area',icon:'💥',name:'Explosión amplia',desc:'Área de ataques +20%'},{id:'health',icon:'❤️',name:'Corazón extra',desc:'Vida máxima +25 y recupera 25'},{id:'magnet',icon:'🧲',name:'Imán de experiencia',desc:'Recoge cristales desde más lejos'},{id:'orbit',icon:'🔮',name:'Orbe guardián',desc:'Añade un orbe que daña enemigos cercanos'},{id:'nova',icon:'🌊',name:'Nova elemental',desc:'Pulso de energía periódico alrededor tuyo'},{id:'lightning',icon:'⚡',name:'Relámpago',desc:'Golpea al enemigo más cercano cada pocos segundos'},{id:'poison',icon:'☣️',name:'Esporas',desc:'Tus ataques aplican daño continuo'},{id:'pierce',icon:'➶',name:'Perforación',desc:'Los proyectiles atraviesan más enemigos'},{id:'heal',icon:'💚',name:'Regeneración',desc:'Recupera 20% de vida inmediatamente'}];
+let profile={coins:0,record:0,selected:'fire',upgrades:{hp:0,damage:0,speed:0,magnet:0}},game=null,running=false,paused=false,last=0,frame=0,joyOn=false,joyId=null,joyCenter={x:0,y:0},input={x:0,y:0},toastTimer=0;
+function load(){try{let d=JSON.parse(localStorage.getItem('eclipse_critters_complete')||'{}');profile={...profile,...d,upgrades:{...profile.upgrades,...d.upgrades}};}catch(e){}updateMenu();}
+function save(){try{localStorage.setItem('eclipse_critters_complete',JSON.stringify(profile));}catch(e){$('status').textContent='No se pudo guardar en este navegador.';}}
+function updateMenu(){$('coins').textContent=profile.coins;$('record').textContent=profile.record;document.querySelectorAll('.creature').forEach(x=>x.classList.toggle('selected',x.dataset.type===profile.selected));}
+window.selectCreature=t=>{if(!TYPES[t])return;profile.selected=t;save();updateMenu();};
+window.buyUpgrade=t=>{if(profile.coins<50){$('status').textContent='Necesitas 50 monedas para comprar esta mejora.';return;}profile.coins-=50;profile.upgrades[t]=(profile.upgrades[t]||0)+1;save();updateMenu();$('status').textContent='¡Mejora comprada! Se aplicará en tu próxima partida.';};
+const canvas=$('canvas'),ctx=canvas.getContext('2d');let W=900,H=500;
+function resize(){let r=canvas.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);canvas.width=Math.max(1,Math.floor(r.width*d));canvas.height=Math.max(1,Math.floor(r.height*d));W=canvas.width;H=canvas.height;}
+addEventListener('resize',resize);
+function player(){let t=TYPES[profile.selected],hp=t.hp+profile.upgrades.hp*10;return {x:W/2,y:H/2,r:15,hp,maxHp:hp,speed:t.speed*(1+profile.upgrades.speed*.05),damage:t.damage*(1+profile.upgrades.damage*.1),type:profile.selected,level:1,xp:0,next:12,rate:t.rate,cd:.25,alive:true,immunity:2,bonusDamage:0,bonusSpeed:0,area:0,magnet:1+profile.upgrades.magnet*.1,pierce:profile.selected==='plant'?2:1,orbit:profile.selected==='shadow'?2:0,nova:0,lightning:0,poison:0,kills:0,coins:0,skills:{}};}
+function startGame(){if(running)return;let p=player();game={p,enemies:[],bullets:[],gems:[],particles:[],elapsed:0,spawn:.6,boss:null,bossSpawned:[],kills:0,coins:0,shake:0,finished:false};$('menu').classList.add('hidden');$('game').style.display='block';$('gameOver').style.display='none';$('victoryOverlay').style.display='none';$('levelOverlay').style.display='none';$('pauseOverlay').style.display='none';$('bossbar').style.display='none';$('bossName').style.display='none';$('skillbar').innerHTML='';paused=false;running=true;input={x:0,y:0};resize();last=performance.now();requestAnimationFrame(loop);}
+window.startGame=startGame;
+function spawnEnemy(){let a=Math.random()*TAU,x=Math.cos(a)*(W*.57)+W/2,y=Math.sin(a)*(H*.65)+H/2;let elapsed=game.elapsed;let pool=ENEMY.filter((e,i)=>i===0||elapsed>i*55),base=pool[Math.floor(Math.random()*pool.length)];let scale=1+elapsed/190;let e={x:clamp(x,-30,W+30),y:clamp(y,-30,H+30),r:base.r,hp:base.hp*scale,maxHp:base.hp*scale,speed:base.speed+Math.min(35,elapsed*.025),damage:base.damage*(1+elapsed/240),xp:base.xp,emoji:base.emoji,name:base.name,elite:false,burn:0,poison:0};if(elapsed>45&&Math.random()<.09){e.hp*=2.2;e.maxHp=e.hp;e.r*=1.2;e.speed*=.88;e.emoji='👹';e.elite=true;e.xp*=3;}game.enemies.push(e);}
+function spawnBoss(stage){let b={x:W/2+rand(-W*.35,W*.35),y:-60,r:38+stage*2,hp:1100+stage*850,maxHp:1100+stage*850,speed:38+stage*3,damage:24+stage*5,emoji:stage===4?'🌑':'👿',name:['','Guardián del Bosque','Titán Abismal','Reina de Sombras','NÚCLEO DEL ECLIPSE'][stage],stage,attack:2.5,phase:0};game.boss=b;game.enemies.push(b);$('bossbar').style.display='block';$('bossName').style.display='block';$('bossName').textContent='JEFE: '+b.name;showToast('⚠️ ¡HA APARECIDO UN JEFE!');}
+function showToast(s){$('toast').textContent=s;$('toast').style.display='block';toastTimer=2.5;}
+function nearest(){let best=null,d=Infinity;for(let e of game.enemies){let n=dist(game.p,e);if(n<d){d=n;best=e;}}return best;}
+function shoot(){let p=game.p,target=nearest();if(!target)return;let a=Math.atan2(target.y-p.y,target.x-p.x),speed=430;let count=p.type==='plant'?2:1;for(let k=0;k<count;k++){let angle=a+(k-(count-1)/2)*.12;game.bullets.push({x:p.x,y:p.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,damage:p.damage*(1+p.bonusDamage*.22),r:7,life:1.5,pierce:p.pierce,color:TYPES[p.type].color,emoji:p.type==='fire'?'🔥':p.type==='water'?'💧':p.type==='plant'?'🍃':'🌙',poison:p.poison});}}
+function pulse(radius,damage,color){let p=game.p;for(let e of game.enemies){if(dist(p,e)<radius+e.r){e.hp-=damage;hitParticles(e.x,e.y,color,5);}}hitParticles(p.x,p.y,color,18);game.shake=.12;}
+function hitParticles(x,y,color,n=5){for(let i=0;i<n;i++){let a=rand(0,TAU),s=rand(25,130);game.particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.45,max:.45,color});}}
+function update(dt){let p=game.p;game.elapsed+=dt;game.spawn-=dt;if(game.spawn<=0){spawnEnemy();game.spawn=Math.max(.22,1.15-game.elapsed*.0008);}
+ const bossTimes=[180,360,540,900];for(let i=0;i<bossTimes.length;i++){let stage=i+1;if(game.elapsed>=bossTimes[i]&&!game.bossSpawned.includes(stage)){game.bossSpawned.push(stage);spawnBoss(stage);}}
+ let m=Math.hypot(input.x,input.y),ix=input.x,iy=input.y;if(m>1){ix/=m;iy/=m;}p.x=clamp(p.x+ix*p.speed*dt,18,W-18);p.y=clamp(p.y+iy*p.speed*dt,72,H-18);p.immunity=Math.max(0,p.immunity-dt);p.cd-=dt;
+ if(p.cd<=0){shoot();p.cd=p.rate*(1-p.bonusSpeed*.13);}
+ // orbiting guardians
+ for(let i=0;i<p.orbit;i++){let a=game.elapsed*2.3+i*TAU/p.orbit,ox=p.x+Math.cos(a)*48,oy=p.y+Math.sin(a)*48;for(let e of game.enemies)if(Math.hypot(e.x-ox,e.y-oy)<e.r+12)e.hp-=24*dt;}
+ p.nova-=dt;if(p.nova<=0&&p.skills.nova){pulse(105+p.area*15,p.damage*1.5,'#7cecff');p.nova=5.5;}
+ p.lightning-=dt;if(p.lightning<=0&&p.skills.lightning){let e=nearest();if(e){e.hp-=p.damage*2.5;hitParticles(e.x,e.y,'#fff18a',14);p.lightning=3.8;}}
+ for(let e of game.enemies){let d=dist(e,p)||1;e.x+=(p.x-e.x)/d*e.speed*dt;e.y+=(p.y-e.y)/d*e.speed*dt;if(d<e.r+p.r&&p.immunity<=0){p.hp-=e.damage*dt;p.immunity=.18;if(p.hp<=0){p.hp=0;endGame(false);return;}}if(e.poison>0){e.poison-=dt;e.hp-=10*dt;}if(e.burn>0){e.burn-=dt;e.hp-=14*dt;}if(e.stage){e.attack-=dt;if(e.attack<=0){e.attack=3.4;for(let k=0;k<6;k++){let a=k*TAU/6;game.bullets.push({enemy:true,x:e.x,y:e.y,vx:Math.cos(a)*150,vy:Math.sin(a)*150,damage:e.damage*.55,r:8,life:2,color:'#ff4c83'});}}}}
+ for(let b of game.bullets){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;if(b.enemy){if(Math.hypot(b.x-p.x,b.y-p.y)<p.r+b.r&&p.immunity<=0){p.hp-=b.damage;p.immunity=.45;b.life=0;}}else{for(let e of game.enemies){if(e.hp>0&&Math.hypot(b.x-e.x,b.y-e.y)<e.r+b.r){e.hp-=b.damage;if(b.poison)e.poison=Math.max(e.poison,2.5);if(e.stage&&p.type==='fire')e.burn=1.4;hitParticles(e.x,e.y,b.color,3);b.pierce--;if(b.pierce<=0){b.life=0;break;}}}}}
+ game.bullets=game.bullets.filter(b=>b.life>0&&b.x>-60&&b.x<W+60&&b.y>-60&&b.y<H+60);
+ let magnet=80*p.magnet;for(let i=game.gems.length-1;i>=0;i--){let g=game.gems[i],d=dist(g,p);if(d<magnet){g.x+=(p.x-g.x)/Math.max(1,d)*240*dt;g.y+=(p.y-g.y)/Math.max(1,d)*240*dt;}if(d<25){p.xp+=g.xp;game.coins+=g.coin;game.gems.splice(i,1);while(p.xp>=p.next&&running)levelUp();}}
+ for(let i=game.enemies.length-1;i>=0;i--){let e=game.enemies[i];if(e.hp<=0){game.kills++;p.kills++;game.gems.push({x:e.x,y:e.y,xp:e.stage?40:e.xp,coin:e.stage?40:e.elite?4:1});hitParticles(e.x,e.y,e.stage?'#ffcf65':'#bb8cff',e.stage?30:8);if(e.stage){game.boss=null;$('bossbar').style.display='none';$('bossName').style.display='none';showToast('🏆 ¡JEFE DERROTADO!');if(e.stage===4){endGame(true);return;}}game.enemies.splice(i,1);}}
+ for(let a of game.particles){a.x+=a.vx*dt;a.y+=a.vy*dt;a.life-=dt;}game.particles=game.particles.filter(a=>a.life>0);
+ if(game.boss){$('bossfill').style.width=clamp(game.boss.hp/game.boss.maxHp*100,0,100)+'%';}
+ if(toastTimer>0){toastTimer-=dt;if(toastTimer<=0)$('toast').style.display='none';}
+ updateHUD();}
+function levelUp(){let p=game.p;p.level++;p.xp-=p.next;p.next=Math.floor(p.next*1.32+5);p.immunity=2.5;running=false;let pool=UPGRADES.slice().sort(()=>Math.random()-.5).slice(0,3);$('upgradeCards').innerHTML='';for(let u of pool){let el=document.createElement('button');el.className='upgrade';el.innerHTML=`<h3>${u.icon} ${u.name}</h3><p>${u.desc}</p>`;el.onclick=()=>{applyUpgrade(u.id);$('levelOverlay').style.display='none';running=true;last=performance.now();requestAnimationFrame(loop);};$('upgradeCards').appendChild(el);}$('levelOverlay').style.display='flex';}
+function applyUpgrade(id){let p=game.p;p.skills[id]=(p.skills[id]||0)+1;switch(id){case'damage':p.damage*=1.22;break;case'speed':p.speed*=1.14;break;case'rapid':p.bonusSpeed+=.18;break;case'area':p.area++;break;case'health':p.maxHp+=25;p.hp=Math.min(p.maxHp,p.hp+25);break;case'magnet':p.magnet+=.35;break;case'orbit':p.orbit++;break;case'nova':p.nova=.2;break;case'lightning':p.lightning=.2;break;case'poison':p.poison=1;break;case'pierce':p.pierce++;break;case'heal':p.hp=Math.min(p.maxHp,p.hp+p.maxHp*.2);break;}updateSkills();showToast('Mejora obtenida: '+UPGRADES.find(x=>x.id===id).name);}
+function updateSkills(){let p=game.p;$('skillbar').innerHTML=['orbit','nova','lightning','poison','pierce'].filter(k=>p.skills[k]).map(k=>`<span class="skill">${({orbit:'🔮 Orbe',nova:'🌊 Nova',lightning:'⚡ Rayo',poison:'☣️ Veneno',pierce:'➶ Perforación'})[k]} ${p.skills[k]}</span>`).join('');}
+function updateHUD(){let p=game.p;$('health').textContent=Math.ceil(p.hp)+'/'+p.maxHp;$('level').textContent=p.level;$('gameCoins').textContent=game.coins;$('time').textContent=Math.floor(game.elapsed/60)+':'+String(Math.floor(game.elapsed%60)).padStart(2,'0');$('kills').textContent=game.kills;$('xpfill').style.width=clamp(p.xp/p.next*100,0,100)+'%';}
+function draw(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#172c24';ctx.fillRect(0,0,W,H);ctx.strokeStyle='#284538';ctx.lineWidth=1;for(let x=0;x<W;x+=42){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}for(let y=0;y<H;y+=42){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}for(let i=0;i<80;i++){let x=(i*137)%W,y=(i*83)%H;ctx.fillStyle='#8eb47a22';ctx.fillRect(x,y,2,5);}
+ for(let g of game.gems){ctx.fillStyle='#63eaff';ctx.shadowBlur=12;ctx.shadowColor='#63eaff';ctx.beginPath();ctx.moveTo(g.x,g.y-7);ctx.lineTo(g.x+6,g.y);ctx.lineTo(g.x,g.y+7);ctx.lineTo(g.x-6,g.y);ctx.fill();ctx.shadowBlur=0;}
+ for(let e of game.enemies){ctx.font=(e.r*2)+'px Arial';ctx.textAlign='center';ctx.fillText(e.emoji,e.x,e.y+e.r*.35);ctx.fillStyle='#381f35';ctx.fillRect(e.x-e.r,e.y-e.r-8,e.r*2,4);ctx.fillStyle=e.stage?'#ffb34d':'#ff5975';ctx.fillRect(e.x-e.r,e.y-e.r-8,e.r*2*clamp(e.hp/e.maxHp,0,1),4);}
+ for(let b of game.bullets){ctx.fillStyle=b.color;ctx.shadowBlur=12;ctx.shadowColor=b.color;ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,TAU);ctx.fill();ctx.shadowBlur=0;}
+ let p=game.p;for(let i=0;i<p.orbit;i++){let a=game.elapsed*2.3+i*TAU/p.orbit;ctx.font='20px Arial';ctx.fillText('🔮',p.x+Math.cos(a)*48,p.y+Math.sin(a)*48+7);}ctx.font='32px Arial';ctx.textAlign='center';ctx.shadowBlur=p.immunity>0?18:0;ctx.shadowColor='#ffe878';ctx.fillText(TYPES[p.type].emoji,p.x,p.y+11);ctx.shadowBlur=0;ctx.fillStyle='#542a38';ctx.fillRect(p.x-20,p.y+22,40,5);ctx.fillStyle='#52e88a';ctx.fillRect(p.x-20,p.y+22,40*clamp(p.hp/p.maxHp,0,1),5);
+ for(let a of game.particles){ctx.globalAlpha=clamp(a.life/a.max,0,1);ctx.fillStyle=a.color;ctx.beginPath();ctx.arc(a.x,a.y,3,0,TAU);ctx.fill();}ctx.globalAlpha=1;}
+function loop(now){if(!running||paused)return;let dt=Math.min((now-last)/1000,.035);last=now;update(dt);draw();if(running&&!paused)requestAnimationFrame(loop);}
+function endGame(victory){if(!running&&!victory)return;running=false;paused=false;let p=game.p,seconds=Math.floor(game.elapsed),reward=game.coins+(victory?250:Math.floor(seconds/15));profile.coins+=reward;profile.record=Math.max(profile.record,seconds);save();updateMenu();$('finalTime').textContent=$('time').textContent;$('finalKills').textContent=game.kills;$('finalCoins').textContent=reward;$('endMessage').textContent=victory?'¡El mundo vuelve a estar a salvo!':'Entrena, mejora tus habilidades e inténtalo de nuevo.';if(victory){$('victoryStats').textContent=`Tiempo: ${$('time').textContent} · Enemigos derrotados: ${game.kills} · Recompensa: ${reward} monedas`;$('victoryOverlay').style.display='flex';}else $('gameOver').style.display='flex';}
+function togglePause(){if(!game||!running&& !paused)return;paused=!paused;$('pauseOverlay').style.display=paused?'flex':'none';if(!paused){last=performance.now();requestAnimationFrame(loop);}}
+window.togglePause=togglePause;
+window.returnMenu=()=>{running=false;paused=false;game=null;$('game').style.display='none';$('menu').classList.remove('hidden');$('pauseOverlay').style.display='none';$('gameOver').style.display='none';$('victoryOverlay').style.display='none';$('levelOverlay').style.display='none';updateMenu();};
+window.goFullscreen=async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();if(screen.orientation?.lock)await screen.orientation.lock('landscape').catch(()=>{});}catch(e){}};
+// Touch joystick: left half of playfield. Keyboard works on desktop.
+const joy=$('joystick'),stick=$('stick');function moveJoy(e){let dx=e.clientX-joyCenter.x,dy=e.clientY-joyCenter.y,len=Math.hypot(dx,dy),s=len>40?40/len:1;dx*=s;dy*=s;stick.style.left=(32+dx)+'px';stick.style.top=(32+dy)+'px';input.x=dx/40;input.y=dy/40;}
+canvas.addEventListener('pointerdown',e=>{if(!running||paused||e.clientX>innerWidth*.65||joyOn)return;joyOn=true;joyId=e.pointerId;joyCenter={x:e.clientX,y:e.clientY};joy.style.display='block';joy.style.left=e.clientX+'px';joy.style.top=e.clientY+'px';try{canvas.setPointerCapture(joyId)}catch(_){}moveJoy(e);});canvas.addEventListener('pointermove',e=>{if(joyOn&&e.pointerId===joyId)moveJoy(e)});function stopJoy(e){if(!joyOn||e.pointerId!==joyId)return;joyOn=false;joyId=null;joy.style.display='none';stick.style.left='32px';stick.style.top='32px';input={x:0,y:0};}canvas.addEventListener('pointerup',stopJoy);canvas.addEventListener('pointercancel',stopJoy);
+let keys={};addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key==='Escape')togglePause();});addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);function keyboard(){if(!joyOn){input.x=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0);input.y=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);}}
+const oldLoop=loop;function frameLoop(now){keyboard();oldLoop(now);}
+// Replace the animation callback used on every resume with the input-aware loop.
+loop=frameLoop;
+load();
+})();
+</script></body></html>
